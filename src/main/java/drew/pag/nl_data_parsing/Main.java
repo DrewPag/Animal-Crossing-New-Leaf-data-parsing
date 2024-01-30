@@ -55,7 +55,7 @@ public class Main {
         new Fish(6, "Koi", 4, 0),
         new Fish(7, "Goldfish", 1, 0),
         new Fish(8, "Pop-eyed Goldfish", 1, 0),
-        new Fish(9, "Killifish", 1, 0),
+        new Fish(9, "Killifish", 1, 3),
         new Fish(10, "Crawfish", 2, 3),
         new Fish(11, "Soft-shelled Turtle", 3, 0),
         new Fish(12, "Tadpole", 1, 3),
