@@ -32,7 +32,7 @@ public class Main {
         "Ladybug", "Violin Beetle", "Longhorn Beetle", "Tiger Beetle", "Dung Beetle", "Wharf Roach", "Hermit Crab", "Firefly",
         "Fruit Beetle", "Scarab Beetle", "Jewel Beetle", "Miyama Stag", "Saw Stag", "Giant Stag", "Rainbow Stag", "Cyclommatus Stag",
         "Golden Stag", "Horned Dynastid", "Horned Atlas", "Horned Elephant", "Horned Hercules", "Goliath Beetle", "Flea", "Pill Bug",
-        "Mosquito", "Fly", "House Centipede", "Centipede", "Spider", "Tarantula", "Scorpion", "Snowflake"};
+        "Mosquito", "Fly", "House Centipede", "Centipede", "Spider", "Tarantula", "Scorpion", "Snowflake", "No Spawn"};
     /**
      * NL data doesn't have acre type ID with the spawn data... so do it yourself
      * -1 = no spawn
@@ -124,19 +124,35 @@ public class Main {
         new Fish(107, "No Spawn", 0, -1)
     };
     
+    // Seaweed has ID 0x4C = 76
+    final static int SEA_CREATURES_ID_OFFSET = 76;
+    final static String[] seaCreatures = new String[] {"Seaweed", "Sea Grapes", "Sea Urchin", "Acorn Barnacle", "Oyster", "Turban Shell",
+                                                "Abalone", "Ear Shell", "Clam", "Pearl Oyster", "Scallop", "Sea Anemone", "Sea Star",
+                                                "Sea Cucumber", "Sea Slug", "Flatworm", "Mantis Shrimp", "Sweet Shrimp", "Tiger Prawn",
+                                                "Spiny Lobster", "Lobster", "Snow Crab", "Horsehair Crab", "Red King Crab", "Spider Crab",
+                                                "Octopus", "Spotted Garden Eel", "Chambered Nautilus", "Horseshoe Crab", "Giant Isopod"};
+    
     // the index of each time range corresponds to its internal ID
     final static String[] bugTimes = new String[]{"11PM - 4AM", "4AM - 8AM", "8AM - 4PM", "4PM - 5PM", "5PM - 7PM", "7PM - 11PM"};
     final static String[] fishTimes = new String[]{"4AM - 9AM, 4PM - 9PM", "9AM - 4PM", "9PM - 4AM"};
     
     // river fish start addr, ocean fish start addr, island fish start addr
     final static int[] FISH_ADDRS = new int[] {0x85ff50, 0x860fb8, 0x863748};
-    final static int BUGS_TOP_LEVEL_ADDR = 0xdca8c;
+    final static int SEA_CREATURES_ADDR = 0x861f78;
+    final static int SEA_CREATURES_ISLAND_ADDR = 0x864288;
+    final static int BUGS_TOP_LEVEL_ADDR = 0x86c2fc;
+    final static int BUGS_ISLAND_TOP_LEVEL_ADDR = 0x86e81c;
     // Ghidra is slightly  off.. first fish addr above is 76F6F8 in HxD...
+    // and the bugs are also off from the fish by 4 bytes!?
     final static int ADDR_OFFSET = 0xF0858;
     
     // size of each data region
     final static int RIVER_FISH_REGION_SIZE = 100;
     final static int OCEAN_FISH_REGION_SIZE = 96;
+    final static int SEA_CREATURES_REGION_SIZE = 88;
+    final static int SEA_CREATURES_ISLAND_REGION_SIZE = 72;
+    final static int BUG_REGION_SIZE=132;
+    final static int BUG_ISLAND_REGION_SIZE=124;
     
     final static String[] monthNames = new String[] {"January", "February", "March", "April", "May", "June", "July",
                                                         "August", "September", "October", "November", "December", "Island"};
@@ -152,12 +168,14 @@ public class Main {
     
     static Double[][] fishSpawnWeightArray = new Double[76][45];
     static Double[][] fishShadowBasedArray = new Double[76][45];
-    static Double[][] bugBasePercentagesArray = new Double[73][78];
+    static Double[][] bugBasePercentagesArray = new Double[74][78];
+    static Double[][] seaCreaturesBasePercentagesArray = new Double[31][45];
     
     static String elfPathStr = "C:/Users/drewp/ExeFS.elf";
     static String fishPercentagesCsv = "C:/Users/drewp/Desktop/nl_fish_percentages.csv";
     static String fishShadowPercentagesCsv = "C:/Users/drewp/Desktop/nl_fish_shadow_percentages.csv";
-    static String bugPercentagesCsv = "C:/Users/drewp/Desktop/ww_bug_percentages.csv";
+    static String bugPercentagesCsv = "C:/Users/drewp/Desktop/nl_bug_percentages.csv";
+    static String seaCreaturePercentagesCsv = "C:/Users/drewp/Desktop/nl_sea_creature_percentages.csv";
 
     public static void main(String[] args) {
         
@@ -168,9 +186,15 @@ public class Main {
             }
         }
         
-        for(int i=0; i < 73; i++){
+        for(int i=0; i < 74; i++){
             for(int j = 0; j < 78; j++){
                 bugBasePercentagesArray[i][j] = 0.0;
+            }
+        }
+        
+        for(int i = 0; i < 31; i++){
+            for(int j = 0; j < 45; j++){
+                seaCreaturesBasePercentagesArray[i][j] = 0.0;
             }
         }
         
@@ -182,20 +206,23 @@ public class Main {
             System.exit(0);
         }
         
-//        String bugs = parseBugData(binPathStr);
+//        String bugs = parseBugData(elfPathStr);
 //        System.out.println(bugs);
-        String fish = parseFishData(elfPathStr);
+//        String fish = parseFishData(elfPathStr);
 //        System.out.println(fish);
+        String seaCreatures = parseSeaCreatureData(elfPathStr);
+        System.out.println(seaCreatures);
         
         // process all of the fish spawn weights
-        String riverSpawnWeights = processRiverFishSpawnWeights();
+//        String riverSpawnWeights = processRiverFishSpawnWeights();
 //        String oceanSpawnWeights = processOceanFishSpawnWeights();
 //        System.out.println(riverSpawnWeights);
 //        System.out.println(oceanSpawnWeights);
         
         // write %s and shadow-based% to .csv files
-        writeFishToCsv();
+//        writeFishToCsv();
 //        writeBugsToCsv();
+        writeSeaCreaturesToCsv();
     }
     
     private static String parseBugData(String dolPathStr){
@@ -216,55 +243,55 @@ public class Main {
             // little
             bb.order(ByteOrder.LITTLE_ENDIAN);
             
-            for(int monthId = 0; monthId < 12; monthId++){
+            for(int monthId = 0; monthId < 13; monthId++){
                 StringBuilder sb = new StringBuilder();
                 sb.append("\n").append(monthNames[monthId]).append(":\n");                
-                
-                // Level 1: get the PTR PTR for this month
-                long monthPtrPtr = ((long) bb.getInt(BUGS_TOP_LEVEL_ADDR + (4*monthId)) & 0xffffffffL) - ADDR_OFFSET;
-//                System.out.println(fishMonthNames[monthId] + " monthPtrPtr " + Integer.toHexString((int) monthPtrPtr));
-                
-                // Level 2: 3 time of day pointers for this month
+                                
+                // for each time of day
                 for(int timeOfDayId = 0; timeOfDayId < 6; timeOfDayId++){
                     
                     sb.append("\n").append(bugTimes[timeOfDayId]).append("\n");
                     
-                    // Note: the lowest level pointers have 4 bytes of [something] in between them - hence *8
-                    long bugDataAddr = ((long) bb.getInt(((int) monthPtrPtr) + (timeOfDayId*8))) - ADDR_OFFSET;
-//                    System.out.println("For time of day ID " + timeOfDayId + " got timeOfDayPtr " + Integer.toHexString((int)timeOfDayPtr));
+                    // handle Island-specific data region size...
+                    long bugAddr =  (monthId == 12) ?
+                            BUGS_ISLAND_TOP_LEVEL_ADDR + (BUG_ISLAND_REGION_SIZE * timeOfDayId) - ADDR_OFFSET
+                            : BUGS_TOP_LEVEL_ADDR + (BUG_REGION_SIZE * ((monthId*6) + timeOfDayId)) - ADDR_OFFSET;
+                    
+//                    System.out.println("Ghidra addr for " + monthNames[monthId] + ": " + (BUGS_TOP_LEVEL_ADDR + (BUG_REGION_SIZE * ((monthId*6) + timeOfDayId))));
 
-                    int bugId = 0;
-                    int lastBugId = 0;
                     int bugIndex = 0;
+                    int lastBugId = 0;
                     int lastSpawnRange = 0;
                     
-                    while(lastSpawnRange < 100){
+                    while(lastSpawnRange < 1000){
 
-                        byte[] bugBytes = new byte[2];
-                        bb.get((int) (bugDataAddr + (bugIndex * 2)), bugBytes, 0, 2);
+                        byte[] bugBytes = new byte[4];
+                        bb.get((int) (bugAddr + (bugIndex * 4)), bugBytes, 0, 4);
 
                         // first byte is the bug ID
-                        bugId = Byte.toUnsignedInt(bugBytes[0]);
-                        
-                        if(bugId < lastBugId || bugId > 56 || bugId < 0){
+                        int bugId = Byte.toUnsignedInt(bugBytes[0]);
+                        // checks for end of segment, to skip over the filler 0 bytes
+                        if(bugId < lastBugId){
+                            lastSpawnRange = 1000;
                             break;
                         }
 
-                        // second byte is the upper spawn range
-                        int upperSpawnRange = Byte.toUnsignedInt(bugBytes[1]);
-                        
+                        // upper spawn range
+                        int upperSpawnRange = ((bugBytes[3] & 0xff) << 8) | (bugBytes[2] & 0xff);
+
                         int spawnWeight = upperSpawnRange - lastSpawnRange;
 
-                        String bugName = bugs[bugId];
+                        String bugName = bugId == 83 ? "No Spawn" : bugs[bugId];
 
                         sb.append(String.format("%1$18s", bugName)).append("\t").append(spawnWeight).append("\n");
                         
-                        // store the percentage (/100.0) in the array at the proper place...
-                        bugBasePercentagesArray[bugId][(monthId*6) + timeOfDayId] = 1.0*spawnWeight;
+                        // store the percentage (/1000.0) in the array at the proper place...
+                        int bugArrIndex = bugId == 83 ? 73 : bugId;
+                        bugBasePercentagesArray[bugArrIndex][(monthId*6) + timeOfDayId] = spawnWeight / 1000.0;
                         
-                        bugIndex++;
                         lastSpawnRange = upperSpawnRange;
                         lastBugId = bugId;
+                        bugIndex++;
                     }
                 }
                 
@@ -430,6 +457,99 @@ public class Main {
                 // add the spawn weight maps for this month to the master maps
                 riverFishSpawnWeightMap.put(monthId, riverMonthlySpawnWeightsMap);
                 oceanFishSpawnWeightMap.put(monthId, oceanMonthlySpawnWeightsMap);
+            }
+            
+//            System.out.println(result);
+            
+            return result.toString();
+            
+        } catch(Exception ex){
+            System.out.println("Exception " + ex);
+            ex.printStackTrace();
+            
+            return result.toString();
+        }
+    }
+    
+    private static String parseSeaCreatureData(String elfPathStr){
+        
+        StringBuilder result = new StringBuilder();
+        
+        try{
+            Path binPath = Paths.get(elfPathStr);
+            
+            byte[] data = null;
+            try {
+                data = Files.readAllBytes(binPath);
+            } catch (IOException ex) {
+                System.out.println("Exception while reading .elf byte array:\n" + ex);
+                System.exit(0);
+            }
+            
+            ByteBuffer bb = ByteBuffer.wrap(data);
+            // little
+            bb.order(ByteOrder.LITTLE_ENDIAN);
+            
+            for(int monthId = 0; monthId < 15; monthId++){
+                StringBuilder sb = new StringBuilder();
+                sb.append("\n").append(fishMonthNames[monthId]).append(":\n");
+                
+                // for each time of day
+                for(int timeOfDayId = 0; timeOfDayId < 3; timeOfDayId++){
+                    
+                    sb.append("\n").append(fishTimes[timeOfDayId]).append("\n");
+                        
+                    long seaCreatureAddr;
+
+                    // if we've reached the Island fish data
+                    if(monthId == 14){
+                        seaCreatureAddr = SEA_CREATURES_ISLAND_ADDR + (SEA_CREATURES_ISLAND_REGION_SIZE*timeOfDayId) - ADDR_OFFSET;
+                    } else{
+                        seaCreatureAddr =  SEA_CREATURES_ADDR + (SEA_CREATURES_REGION_SIZE * ((monthId*3) + timeOfDayId)) - ADDR_OFFSET;
+                    }
+
+                    int seaCreatureId = -1;
+                    int lastSeaCreatureId = -1;
+                    int seaCreatureIndex = 0;
+                    int lastSpawnRange = 0;
+                    while(lastSpawnRange < 100){
+
+                        byte[] seaCreatureBytes = new byte[4];
+                        bb.get((int) (seaCreatureAddr + (seaCreatureIndex * 4)), seaCreatureBytes, 0, 4);
+
+                        // first byte is the 
+                        seaCreatureId = Byte.toUnsignedInt(seaCreatureBytes[0]);
+                        // checks for end of segment, to skip over the filler 0 bytes
+                        if(seaCreatureId < lastSeaCreatureId){
+                            lastSpawnRange = 100;
+                            break;
+                        }
+
+                        // upper spawn range
+                        int upperSpawnRange = ((seaCreatureBytes[3] & 0xff) << 8) | (seaCreatureBytes[2] & 0xff);
+
+                        int spawnWeight = upperSpawnRange - lastSpawnRange;
+                        
+                        String seaCreatureName = (seaCreatureId == 107 ? "No Spawn" : seaCreatures[seaCreatureId - SEA_CREATURES_ID_OFFSET]);
+                        
+//                        System.out.println(seaCreatureName + " upperSpawnRange " + upperSpawnRange + ", lastSpawnRange " + lastSpawnRange);
+                        
+                        // store the percentage (/100.0) in the array at the proper place...
+                        int seaCreatureArrIndex = seaCreatureId == 107 ? 30 : seaCreatureId - SEA_CREATURES_ID_OFFSET;
+                        seaCreaturesBasePercentagesArray[seaCreatureArrIndex][(monthId*3) + timeOfDayId] = spawnWeight / 100.0;
+                        sb.append(String.format("%1$18s", seaCreatureName)).append("\t").append(spawnWeight);
+//                            if(( (isOcean == 0) && acreId != 0) || ((isOcean == 1) && acreId != 6)){
+//                                sb.append("\t").append(fishAcreIds[acreId]);
+//                            }
+                        sb.append("\n");
+
+                        lastSpawnRange = upperSpawnRange;
+                        lastSeaCreatureId = seaCreatureId;
+                        seaCreatureIndex++;
+                    }
+                }
+                
+                result.append(sb);
             }
             
 //            System.out.println(result);
@@ -947,7 +1067,7 @@ public class Main {
                 pw.println(csvLine);
             }
         } catch(Exception ex){
-            System.out.println("Exception printing fish percentages");
+            System.out.println("Exception writing bug percentages to .csv");
             ex.printStackTrace();
         }
         
@@ -958,7 +1078,7 @@ public class Main {
                 pw.println(csvLine);
             }
         } catch(Exception ex){
-            System.out.println("Exception printing fish percentages");
+            System.out.println("Exception writing bug percentages to .csv");
             ex.printStackTrace();
         }
     }
@@ -970,7 +1090,19 @@ public class Main {
                 pw.println(csvLine);
             }
         } catch(Exception ex){
-            System.out.println("Exception printing fish percentages");
+            System.out.println("Exception writing bug percentages to .csv");
+            ex.printStackTrace();
+        }
+    }
+    
+    private static void writeSeaCreaturesToCsv(){
+        try (PrintWriter pw = new PrintWriter(seaCreaturePercentagesCsv)) {
+            for(int seaCreatureIndex = 0; seaCreatureIndex < seaCreaturesBasePercentagesArray.length; seaCreatureIndex++){
+                String csvLine = getCsvLineFromDoubles(seaCreaturesBasePercentagesArray[seaCreatureIndex]);
+                pw.println(csvLine);
+            }
+        } catch(Exception ex){
+            System.out.println("Exception printing writing sea creature percentages to .csv");
             ex.printStackTrace();
         }
     }
