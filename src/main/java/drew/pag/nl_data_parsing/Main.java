@@ -80,7 +80,7 @@ public class Main {
         new Fish(31, "Mitten Crab", 2, 0),
         new Fish(32, "Guppy", 1, 0),
         new Fish(33, "Nibble fish", 2, 0),
-        new Fish(34, "Angelfish", 1, 0),
+        new Fish(34, "Angelfish", 2, 0),
         new Fish(35, "Neon Tetra", 1, 0),
         new Fish(36, "Piranha", 2, 0),
         new Fish(37, "Arowana", 4, 0),
@@ -208,21 +208,21 @@ public class Main {
         
 //        String bugs = parseBugData(elfPathStr);
 //        System.out.println(bugs);
-//        String fish = parseFishData(elfPathStr);
-//        System.out.println(fish);
-        String seaCreatures = parseSeaCreatureData(elfPathStr);
-        System.out.println(seaCreatures);
+        String fish = parseFishData(elfPathStr);
+        System.out.println(fish);
+//        String seaCreatures = parseSeaCreatureData(elfPathStr);
+//        System.out.println(seaCreatures);
         
         // process all of the fish spawn weights
-//        String riverSpawnWeights = processRiverFishSpawnWeights();
+        String riverSpawnWeights = processRiverFishSpawnWeights();
 //        String oceanSpawnWeights = processOceanFishSpawnWeights();
-//        System.out.println(riverSpawnWeights);
+        System.out.println(riverSpawnWeights);
 //        System.out.println(oceanSpawnWeights);
         
         // write %s and shadow-based% to .csv files
-//        writeFishToCsv();
+        writeFishToCsv();
 //        writeBugsToCsv();
-        writeSeaCreaturesToCsv();
+//        writeSeaCreaturesToCsv();
     }
     
     private static String parseBugData(String dolPathStr){
@@ -398,16 +398,12 @@ public class Main {
                             
                             int acreId;
                             // handle unique acre types:
-                            // salmon/king salmon acre ID depending on early September or late September
+                            // salmon/king salmon actually always show up at the river mouth in this game...
                             // can/boot/tire, depending on if this is river data or ocean data
                             switch (fishId) {
                                 case 29:
                                 case 30:
-                                    if(monthId == 9){
-                                        acreId = 4;
-                                    } else{
-                                        acreId = 0;
-                                    }   
+                                    acreId = 4;  
                                     break;
                                 case 72:
                                 case 73:
